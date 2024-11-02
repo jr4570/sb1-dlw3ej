@@ -14,7 +14,7 @@ export function TierList() {
     <div className="grid grid-cols-1 gap-2">
       {tiers.map(({ name, color, limit }) => (
         <div key={name} className="flex items-center gap-2">
-          <Sparkles className={color} />
+          <Sparkles className={`w-4 h-4 ${color}`} />
           <span>{name}: {limit}</span>
         </div>
       ))}

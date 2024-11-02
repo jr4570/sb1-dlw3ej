@@ -54,7 +54,7 @@ function App() {
   ];
 
   useEffect(() => {
-    if (totalPlays % 100 === 0 && totalPlays > 0) {
+    if (totalPlays % 500 === 0 && totalPlays > 0) {
       setRemainingTiers({
         special: 1,
         gold: 2,
@@ -65,20 +65,22 @@ function App() {
   }, [totalPlays]);
 
   const getRandomTier = () => {
+    const totalParticipants = 500;
+    
     if (remainingTiers.special > 0) {
-      const chance = Math.random() * 100;
+      const chance = Math.random() * totalParticipants;
       if (chance < 1) return 'special';
     }
     if (remainingTiers.gold > 0) {
-      const chance = Math.random() * 100;
+      const chance = Math.random() * totalParticipants;
       if (chance < 2) return 'gold';
     }
     if (remainingTiers.silver > 0) {
-      const chance = Math.random() * 100;
+      const chance = Math.random() * totalParticipants;
       if (chance < 5) return 'silver';
     }
     if (remainingTiers.bronze > 0) {
-      const chance = Math.random() * 100;
+      const chance = Math.random() * totalParticipants;
       if (chance < 10) return 'bronze';
     }
     return 'basic';
