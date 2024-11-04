@@ -2,12 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { LotteryHeader } from './components/LotteryHeader';
 import { LotteryResult } from './components/LotteryResult';
 import { TierList } from './components/TierList';
+import { LanguageToggle } from './components/LanguageToggle';
+import { AdminDashboard } from './components/AdminDashboard';
+import { AdminLogin } from './components/AdminLogin';
+import { translations } from './translations';
+import { Shield } from 'lucide-react';
 
 type DiscountTier = 'special' | 'gold' | 'silver' | 'bronze' | 'basic';
+type Language = 'zh' | 'en';
 
 interface DiscountResult {
   tier: DiscountTier;
   animation: string;
+  timestamp?: number;
 }
 
 interface TierCount {
@@ -21,13 +28,18 @@ function App() {
   const [isSpinning, setIsSpinning] = useState(false);
   const [result, setResult] = useState<DiscountResult | null>(null);
   const [totalPlays, setTotalPlays] = useState(0);
+  const [language, setLanguage] = useState<Language>('zh');
+  const [showAdmin, setShowAdmin] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [lotteryHistory, setLotteryHistory] = useState<DiscountResult[]>([]);
   const [remainingTiers, setRemainingTiers] = useState<TierCount>({
     special: 1,
-    gold: 2,
-    silver: 5,
-    bronze: 10
+    gold: 3,
+    silver: 6,
+    bronze: 90
   });
 
+  const t = translations[language];
   const discountTiers: DiscountTier[] = ['special', 'gold', 'silver', 'bronze', 'basic'];
 
   const tierColors = {
@@ -38,28 +50,20 @@ function App() {
     basic: 'text-blue-500'
   };
 
-  const tierNames = {
-    special: '特級折扣',
-    gold: '黃金折扣',
-    silver: '白銀折扣',
-    bronze: '青銅折扣',
-    basic: '基本折扣'
-  };
-
   const animations = [
-    'scale-110 rotate-3',
-    'scale-110 -rotate-3',
-    'scale-105 rotate-1',
-    'scale-105 -rotate-1'
+    'scale-105 rotate-2 duration-150',
+    'scale-105 -rotate-2 duration-150',
+    'scale-103 rotate-1 duration-150',
+    'scale-103 -rotate-1 duration-150'
   ];
 
   useEffect(() => {
     if (totalPlays % 500 === 0 && totalPlays > 0) {
       setRemainingTiers({
         special: 1,
-        gold: 2,
-        silver: 5,
-        bronze: 10
+        gold: 3,
+        silver: 6,
+        bronze: 90
       });
     }
   }, [totalPlays]);
@@ -73,15 +77,15 @@ function App() {
     }
     if (remainingTiers.gold > 0) {
       const chance = Math.random() * totalParticipants;
-      if (chance < 2) return 'gold';
+      if (chance < 3) return 'gold';
     }
     if (remainingTiers.silver > 0) {
       const chance = Math.random() * totalParticipants;
-      if (chance < 5) return 'silver';
+      if (chance < 6) return 'silver';
     }
     if (remainingTiers.bronze > 0) {
       const chance = Math.random() * totalParticipants;
-      if (chance < 10) return 'bronze';
+      if (chance < 90) return 'bronze';
     }
     return 'basic';
   };
@@ -107,26 +111,70 @@ function App() {
       setResult({ tier: randomTier, animation: randomAnimation });
       
       counter++;
-      if (counter >= 15) {
+      if (counter >= 12) {
         clearInterval(spinInterval);
         setIsSpinning(false);
-        setResult({ tier: finalTier, animation: 'scale-100' });
+        const newResult = { 
+          tier: finalTier, 
+          animation: 'scale-100 duration-500',
+          timestamp: Date.now()
+        };
+        setResult(newResult);
+        setLotteryHistory(prev => [newResult, ...prev]);
         setTotalPlays(prev => prev + 1);
         updateTierCount(finalTier);
       }
-    }, 100);
+    }, 80);
   };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    setShowAdmin(false);
+  };
+
+  if (showAdmin) {
+    if (!isAuthenticated) {
+      return (
+        <AdminLogin 
+          onLogin={() => setIsAuthenticated(true)}
+          onBack={() => setShowAdmin(false)}
+          t={t}
+        />
+      );
+    }
+    return (
+      <AdminDashboard
+        lotteryHistory={lotteryHistory}
+        remainingTiers={remainingTiers}
+        t={t}
+        tierColors={tierColors}
+        onBack={() => setShowAdmin(false)}
+        onLogout={handleLogout}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center p-4">
       <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-8 max-w-md w-full">
-        <LotteryHeader />
+        <div className="flex justify-between mb-4">
+          <button
+            onClick={() => setShowAdmin(true)}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors text-gray-700"
+          >
+            <Shield className="w-4 h-4" />
+            <span className="text-sm font-medium">{t.admin}</span>
+          </button>
+          <LanguageToggle language={language} setLanguage={setLanguage} />
+        </div>
+
+        <LotteryHeader t={t} />
 
         <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl p-8 mb-8">
           <LotteryResult 
             result={result}
             tierColors={tierColors}
-            tierNames={tierNames}
+            t={t}
           />
         </div>
 
@@ -140,11 +188,11 @@ function App() {
                 : 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700'
             }`}
           >
-            {isSpinning ? '抽獎中...' : '開始抽獎'}
+            {isSpinning ? t.spinning : t.startSpin}
           </button>
 
           <div className="text-sm text-gray-600">
-            <TierList />
+            <TierList t={t} />
           </div>
         </div>
       </div>
